@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Logs | CPEPD</title>
+    <link rel="stylesheet" href="log-in.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <button class="toggle-btn" id="toggleBtn"><i class="fas fa-bars"></i></button>
+        <div class="sidebar-header">
+            <h2><i class="fas fa-graduation-cap"></i> CPEPD</h2>
+            <p>Renewable Energy School Event Attendance Monitoring Kiosk</p>
+        </div>
+        <ul>
+        <li class="nav-item" onclick="navigateToPage('status.html')"><i class="fas fa-signal"></i><span>Status</span></li>
+         <li class="nav-item" onclick="navigateToPage('event-management.html')"><i class="fas fa-calendar-alt"></i><span>Event Management</span></li>
+         <li class="nav-item" onclick="navigateToPage('attendance-logs.html')"><i class="fas fa-clipboard-list"></i><span>Attendance Logs</span></li>
+         <li class="nav-item" onclick="navigateToPage('index.html')"><i class="fas fa-user"></i><span>Student Login</span></li>
+         <li class="nav-item" onclick="navigateToPage('evaluation.html')"><i class="fas fa-star"></i><span>Evaluation & Certificates</span></li>
+         <li class="nav-item" onclick="navigateToPage('system-settings.html')"><i class="fas fa-cog"></i><span>System Settings</span></li>
+         <li class="nav-item" onclick="navigateToPage('reports-analytics.html')"><i class="fas fa-chart-bar"></i><span>Reports & Analytics</span></li>
+         <li class="nav-item" onclick="navigateToPage('verification-panel.html')"><i class="fas fa-check-circle"></i><span>Verification Panel</span></li>
+         <li class="nav-item" onclick="navigateToPage('logout.html')"><i class="fas fa-sign-out-alt"></i><span>Log out</span></li>
+        </ul>
+    </div>
+
+    <div class="main-content" id="mainContent">
+        <div class="content-header">
+            <h1><i class="fas fa-clipboard-list"></i> Attendance Logs</h1>
+            <p>View and manage attendance entries with search, filter, and export capabilities</p>
+        </div>
+        
+        <div class="container">
+            <div class="stats-summary">
+                <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Total Entries</div></div>
+                <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Verified</div></div>
+                <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Pending</div></div>
+                <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Rejected</div></div>
+            </div>
+            
+            <div class="controls">
+                <h3><i class="fas fa-search"></i> Search & Filter</h3>
+                <div class="search-filters">
+                    <div class="form-group">
+                        <label for="searchInput">Search by Student ID or Name</label>
+                        <input type="text" id="searchInput" placeholder="Enter student ID or name...">
+                    </div>
+                    <div class="form-group">
+                        <label for="dateFilter">Filter by Date</label>
+                        <input type="date" id="dateFilter">
+                    </div>
+                    <div class="form-group">
+                   <div class="form-group">
+                        <label>Filter by Event</label>
+
+                   <div class="custom-dropdown">
+                   <div class="dropdown-selected" onclick="toggleDropdown()">
+                   <span id="selectedEventText">All Events</span>
+                   <i class="fas fa-caret-down"></i>
+                   </div>
+                   <div class="dropdown-menu" id="eventDropdownMenu">
+                   <!-- Events will load here -->
+                    </div>
+                    </div>
+                    </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="statusFilter">Filter by Status</label>
+                        <select id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="verified">Verified</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <button class="btn btn-primary" onclick="searchLogs()"><i class="fas fa-search"></i> Search</button>
+                    <button class="btn btn-warning" onclick="clearFilters()"><i class="fas fa-eraser"></i> Clear Filters</button>
+                    <button class="btn btn-success" onclick="exportToPDF()"><i class="fas fa-file-pdf"></i> Export PDF</button>
+                    <button class="btn btn-info" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Export Excel</button>
+
+                <div class="reset-buttons" style="margin-top: 15px;">
+                    <button class="btn btn-warning" onclick="resetEntries('rejected')">Reset Rejected</button>
+                    <button class="btn btn-success" onclick="resetEntries('verified')">Reset Verified</button>
+                    <button class="btn btn-info" onclick="resetEntries('pending')">Reset Pending</button>
+                    <button class="btn btn-danger" onclick="resetEntries('all')">Reset Total Entries</button>
+                </div>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <h3><i class="fas fa-table"></i> Attendance Records</h3>
+                <table id="attendanceTable">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Student ID</th>
+                            <th>Entry Date & Time</th>
+                            <th>Exit Time</th>
+                            <th>Status</th>
+                            <th>Verification</th>
+                            <th>Photo</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody"></tbody>
+                </table>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Modal -->
+    <div id="photoModal" class="photo-modal">
+        <span class="close-photo" onclick="closePhotoModal()">&times;</span>
+        <div class="photo-modal-content">
+            <img id="modalPhoto" src="" alt="Student Photo">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+    <!-- 🔐 ADMIN PAGE PROTECTION -->
+    <script>
+    (function () {
+        const isLoggedIn = sessionStorage.getItem("adminLoggedIn");
+
+        if (isLoggedIn !== "true") {
+            const username = prompt("Enter admin username:");
+            const password = prompt("Enter admin password:");
+
+            if (username === "admin" && password === "sac123") {
+                sessionStorage.setItem("adminLoggedIn", "true");
+                alert("Login successful!");
+            } else {
+                alert("Access denied!");
+                window.location.href = "student-login.html";
+            }
+        }
+    })();
+
+    function logout() {
+        sessionStorage.removeItem("adminLoggedIn");
+        alert("Logged out successfully!");
+        window.location.href = "student-login.html";
+    }
+</script>
+
+    <!-- ======================== Attendance Logs Dynamic Script ======================== -->
+<script>
+// Load attendance data from localStorage
+let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || [];
+let filteredData = [...attendanceData];
+
+// Ensure default status is "pending" if not already verified/rejected
+attendanceData.forEach(entry => {
+    if (!entry.status || (entry.status !== "verified" && entry.status !== "rejected")) {
+        entry.status = "pending";
+    }
+});
+localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+
+// Render Stats Cards
+function renderStats() {
+    const total = attendanceData.length;
+    const verified = attendanceData.filter(a => a.status === "verified").length;
+    const pending = attendanceData.filter(a => a.status === "pending").length;
+    const rejected = attendanceData.filter(a => a.status === "rejected").length;
+
+    const statNumbers = document.querySelectorAll(".stat-card .stat-number");
+    statNumbers[0].innerText = total;
+    statNumbers[1].innerText = verified;
+    statNumbers[2].innerText = pending;
+    statNumbers[3].innerText = rejected;
+}
+
+// Render Attendance Table
+let selectedEvent = "";
+
+function loadEventFilterOptions() {
+
+    const dropdown = document.getElementById("eventDropdownMenu");
+    dropdown.innerHTML = "";
+
+    // 🔹 Get events created in Event Management
+    const eventsData = JSON.parse(localStorage.getItem("events")) || [];
+
+    // All events option
+    const allItem = document.createElement("div");
+    allItem.className = "dropdown-item";
+    allItem.innerHTML = `<span onclick="selectEvent('')">All Events</span>`;
+    dropdown.appendChild(allItem);
+
+    eventsData.forEach(event => {
+
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+
+        item.innerHTML = `
+            <span onclick="selectEvent('${event.name}')">${event.name}</span>
+        `;
+
+        dropdown.appendChild(item);
+    });
+}
+
+// Call this function whenever the page loads or filters are reset
+loadEventFilterOptions();
+
+function renderTable(data) {
+    const tbody = document.getElementById("attendanceTableBody");
+    tbody.innerHTML = "";
+
+    data.forEach(entry => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${entry.name}</td>
+            <td>${entry.studentId}</td>
+            <td>${new Date(entry.entryTime).toLocaleString()}</td>
+            <td>${entry.exitTime ? new Date(entry.exitTime).toLocaleString() : "-"}</td>
+            <td><span class="status-badge status-${entry.status}">${entry.status}</span></td>
+            <td><i class="verification-icon ${entry.status}"></i></td>
+            <td><img src="${entry.photo}" style="width:50px;height:50px;border-radius:50%;cursor:pointer;" onclick="viewPhoto('${entry.photo}')"></td>
+            <td>
+                ${entry.status === "pending" ? `
+                    <button onclick="updateStatus(${entry.id}, 'verified')" class="btn-check" title="Mark as Verified">✅</button>
+                    <button onclick="updateStatus(${entry.id}, 'rejected')" class="btn-ex" title="Mark as Rejected">❌</button>` 
+                    : "-"}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Update Status Function ✅❌
+function updateStatus(id, newStatus) {
+    const entry = attendanceData.find(a => a.id === id);
+    if (!entry) return;
+
+    entry.status = newStatus;
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+
+    applyCurrentFilters();
+    renderStats();
+}
+
+// View Photo Modal
+function viewPhoto(src) {
+    document.getElementById("modalPhoto").src = src;
+    document.getElementById("photoModal").style.display = "block";
+}
+
+function closePhotoModal() {
+    document.getElementById("photoModal").style.display = "none";
+}
+
+// ================= Search & Filter =================
+function applyCurrentFilters() {
+    const search = document.getElementById("searchInput").value.toLowerCase();
+    const date = document.getElementById("dateFilter").value;
+    const eventFilter = selectedEvent;
+    const statusFilter = document.getElementById("statusFilter").value;
+
+    filteredData = attendanceData.filter(a => {
+        const matchesSearch = a.name.toLowerCase().includes(search) || a.studentId.toLowerCase().includes(search);
+        const matchesDate = !date || new Date(a.entryTime).toISOString().split('T')[0] === date;
+        const matchesEvent = !eventFilter || a.event === eventFilter;
+        const matchesStatus = !statusFilter || a.status === statusFilter;
+        return matchesSearch && matchesDate && matchesEvent && matchesStatus;
+    });
+
+    renderTable(filteredData);
+}
+
+function searchLogs() {
+    applyCurrentFilters();
+}
+
+function clearFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("dateFilter").value = "";
+    document.getElementById("eventFilter").value = "";
+    document.getElementById("statusFilter").value = "";
+    filteredData = [...attendanceData];
+    renderTable(filteredData);
+}
+
+// ================= RESET FUNCTIONS =================
+function resetEntries(type) {
+
+    // 🔥 IF CLICKED RESET TOTAL ENTRIES
+    if (type === "all") {
+
+        if (attendanceData.length === 0) {
+            alert("No records to reset.");
+            return;
+        }
+
+        // Clear everything
+        attendanceData = [];
+        filteredData = [];
+
+        localStorage.setItem("attendanceData", JSON.stringify([]));
+
+        renderTable([]);
+        renderStats();
+
+        alert("All attendance records have been deleted successfully.");
+        return;
+    }
+
+    // 🔽 NORMAL RESET (PER STUDENT)
+    const identifier = prompt("Enter Student Name or RFID:");
+    if (!identifier || identifier.trim() === "") {
+        alert("Please enter a valid name or RFID.");
+        return;
+    }
+
+    const searchValue = identifier.toLowerCase().trim();
+
+    const studentExists = attendanceData.some(a =>
+        a.name.toLowerCase() === searchValue ||
+        a.studentId.toLowerCase() === searchValue
+    );
+
+    if (!studentExists) {
+        alert("Please enter a valid name or RFID.");
+        return;
+    }
+
+    let message = "";
+
+    switch (type) {
+        case "rejected":
+            message = "rejected entries";
+            break;
+        case "verified":
+            message = "verified entries";
+            break;
+        case "pending":
+            message = "pending entries";
+            break;
+        default:
+            return;
+    }
+
+    if (!confirm(`Remove ${message} for "${identifier}"?`)) return;
+
+    const originalLength = attendanceData.length;
+
+    attendanceData = attendanceData.filter(a => {
+        const matchStudent =
+            a.name.toLowerCase() === searchValue ||
+            a.studentId.toLowerCase() === searchValue;
+
+        return !(matchStudent && a.status === type);
+    });
+
+    if (attendanceData.length === originalLength) {
+        alert(`No ${message} found for this student.`);
+        return;
+    }
+
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+    applyCurrentFilters();
+    renderStats();
+
+    alert(`${message} removed successfully.`);
+}
+
+// ================= AUTO REFRESH =================
+renderStats();
+renderTable(filteredData);
+
+setInterval(() => {
+    attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || [];
+    // Ensure any new entries default to pending
+    attendanceData.forEach(entry => {
+        if (!entry.status || (entry.status !== "verified" && entry.status !== "rejected")) {
+            entry.status = "pending";
+        }
+    });
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+    applyCurrentFilters();
+    renderStats();
+}, 5000);
+
+// ================= EXPORT TO PDF =================
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    if (filteredData.length === 0) {
+        alert("No attendance records found.");
+        return;
+    }
+
+    doc.setFontSize(16);
+    doc.text("CPEPD Attendance Report", 14, 15);
+
+    doc.setFontSize(12);
+    doc.text(`Total Records: ${filteredData.length}`, 14, 25);
+
+    const tableData = filteredData.map(entry => [
+        entry.name,
+        entry.studentId,
+        entry.event,
+        new Date(entry.entryTime).toLocaleString(),
+        entry.exitTime ? new Date(entry.exitTime).toLocaleString() : "-",
+        entry.status
+    ]);
+
+    doc.autoTable({
+        startY: 30,
+        head: [["Name", "Student ID", "Event", "Entry Time", "Exit Time", "Status"]],
+        body: tableData
+    });
+
+    doc.save("Attendance-Report.pdf");
+}
+
+// ================= EXPORT TO EXCEL =================
+function exportToExcel() {
+
+    if (filteredData.length === 0) {
+        alert("No attendance records found.");
+        return;
+    }
+
+    const formattedData = filteredData.map(entry => ({
+        "Name": entry.name,
+        "Student ID": entry.studentId,
+        "Event": entry.event,
+        "Entry Time": new Date(entry.entryTime).toLocaleString(),
+        "Exit Time": entry.exitTime ? new Date(entry.exitTime).toLocaleString() : "-",
+        "Status": entry.status
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+
+    XLSX.writeFile(workbook, "Attendance-Report.xlsx");
+}
+
+
+
+// ================= DELETE EVENT FROM FILTER =================
+function deleteSelectedEvent() {
+
+    const eventFilter = document.getElementById("eventFilter");
+    const selectedEvent = eventFilter.value;
+
+    if (!selectedEvent) {
+        alert("Please select an event to delete.");
+        return;
+    }
+
+    if (!confirm(`Delete event "${selectedEvent}"?`)) return;
+
+    let eventsData = JSON.parse(localStorage.getItem("events")) || [];
+
+    // Remove event from eventsData
+    eventsData = eventsData.filter(event => event.name !== selectedEvent);
+
+    localStorage.setItem("events", JSON.stringify(eventsData));
+
+    // Also remove attendance records for that event
+    attendanceData = attendanceData.filter(a => a.event !== selectedEvent);
+
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+
+    // Reload filter options
+    loadEventFilterOptions();
+
+    applyCurrentFilters();
+    renderStats();
+
+    alert(`Event "${selectedEvent}" deleted successfully.`);
+}
+
+
+function deleteEvent(eventName){
+
+    if(!confirm(`Delete event "${eventName}"?`)) return;
+
+    let eventsData = JSON.parse(localStorage.getItem("eventsData")) || [];
+    eventsData = eventsData.filter(e => e.name !== eventName);
+
+    localStorage.setItem("eventsData", JSON.stringify(eventsData));
+
+    attendanceData = attendanceData.filter(a => a.event !== eventName);
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+
+    loadEventFilterOptions();
+    applyCurrentFilters();
+    renderStats();
+}
+
+
+
+
+function toggleDropdown(){
+    const menu = document.getElementById("eventDropdownMenu");
+    menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+function selectEvent(eventName){
+
+    selectedEvent = eventName;
+
+    document.getElementById("selectedEventText").innerText =
+        eventName || "All Events";
+
+    document.getElementById("eventDropdownMenu").style.display = "none";
+
+    applyCurrentFilters();
+}
+
+
+function toggleExportButtons() {
+    const hasData = attendanceData.length > 0;
+
+    document.querySelector(".btn-success").disabled = !hasData;
+    document.querySelector(".btn-info").disabled = !hasData;
+}
+
+
+</script>
+<script src="script.js"></script>
+</body>
+</html>

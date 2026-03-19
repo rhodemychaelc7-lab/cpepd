@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging Out | CPEPD</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .logout-box {
+            background: rgba(0,0,0,0.3);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        }
+        .logout-box h1 {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="logout-box">
+        <h1>Logging Out...</h1>
+        <p>Please wait while we log you out of the system.</p>
+    </div>
+
+    <script>
+    // Optional: clear stored data
+    localStorage.clear();
+
+    const title = document.querySelector("h1");
+    const message = document.querySelector("p");
+
+    // Show logout message first
+    setTimeout(() => {
+        title.textContent = "Logged Out Successfully!";
+        message.textContent = "Thank you for using the system.";
+    }, 1000);
+
+    // Redirect after showing thank you message
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 3000);
+</script>
+<script src="script.js"></script>
+</body>
+</html>

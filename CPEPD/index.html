@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Login</title>
+    <link rel="stylesheet" href="log-in.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+    <button class="toggle-btn" id="toggleBtn"><i class="fas fa-bars"></i></button>
+    <div class="sidebar-header">
+        <h2><i class="fas fa-graduation-cap"></i> CPEPD</h2>
+        <p>Renewable Energy School Event Attendance Monitoring Kiosk</p>
+    </div>
+    <ul>
+        <li class="nav-item" onclick="navigateToPage('status.html')"><i class="fas fa-signal"></i><span>Status</span></li>
+        <li class="nav-item" onclick="navigateToPage('event-management.html')"><i class="fas fa-calendar-alt"></i><span>Event Management</span></li>
+        <li class="nav-item" onclick="navigateToPage('attendance-logs.html')"><i class="fas fa-clipboard-list"></i><span>Attendance Logs</span></li>
+        <li class="nav-item" onclick="navigateToPage('index.html')"><i class="fas fa-user"></i><span>Student Login</span></li>
+        <li class="nav-item" onclick="navigateToPage('evaluation.html')"><i class="fas fa-star"></i><span>Evaluation & Certificates</span></li>
+        <li class="nav-item" onclick="navigateToPage('system-settings.html')"><i class="fas fa-cog"></i><span>System Settings</span></li>
+        <li class="nav-item" onclick="navigateToPage('reports-analytics.html')"><i class="fas fa-chart-bar"></i><span>Reports & Analytics</span></li>
+        <li class="nav-item" onclick="navigateToPage('verification-panel.html')"><i class="fas fa-check-circle"></i><span>Verification Panel</span></li>
+        <li class="nav-item" onclick="navigateToPage('logout.html')"><i class="fas fa-sign-out-alt"></i><span>Log out</span></li>
+    </ul>
+</div>
+
+<div class="login-container">
+    <div class="login-card">
+        <h1><i class="fas fa-user-check"></i> Student Attendance</h1>
+        <p class="subtitle">Tap your RFID card to log in</p>
+         <div class="active-event-info" id="activeEventInfo">
+         <!-- Active Event Label will appear here -->
+         </div>
+        <div class="form-group">
+           <label for="studentId">Student ID</label>
+           <input type="text" id="studentId" placeholder="Waiting for RFID tap..." readonly>
+
+           <label for="studentName">Student Name</label>
+           <input type="text" id="studentName" placeholder="Auto-generated" readonly>
+
+           <label for="studentYearSection">Year & Section</label>
+           <input type="text" id="studentYearSection" placeholder="Auto-generated" readonly>
+        </div>
+
+        <div class="camera-section">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <button class="btn-capture" onclick="capturePhoto()">
+                <i class="fas fa-camera"></i> Capture Photo
+            </button>
+        </div>
+
+        <button class="btn-submit" onclick="submitAttendance()">
+            <i class="fas fa-paper-plane"></i> Submit Attendance
+        </button>
+
+        <p id="statusMessage" class="status-message"></p>
+    </div>
+</div>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+let capturedImage = null;
+
+
+/* ================= CAMERA START ================= */
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => video.srcObject = stream)
+    .catch(err => alert("Camera access denied or not available."));
+
+function capturePhoto() {
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    capturedImage = canvas.toDataURL('image/png');
+    document.getElementById("statusMessage").innerText = "✅ Photo captured.";
+}
+
+
+/* ================= STUDENT DATABASE ================= */
+const studentDatabase = [
+    {
+        rfid: "2074005930",
+        name: "Rhode Mychael M Conlu",
+        yearSection: "BSCPE 4B"
+    },
+    {
+        rfid: "2150705912",
+        name: "Juliene Diente",
+        yearSection: "BSCPE 4A"
+    },
+    {
+        rfid: "2069944602",
+        name: "Andrae Tiron",
+        yearSection: "BSCPE 4A"
+    },
+
+    {  
+        rfid: "2067551930",
+        name: "Jerniel Tajanlangit",
+        yearSection: "BSCPE 4B"
+
+    },
+
+    {  
+        rfid: "2079073114",
+        name: "Christian Subaldo",
+        yearSection: "BSCPE 4B"
+
+    },
+
+    {  
+        rfid: "2155122168",
+        name: "Jayson Dela Fuente",
+        yearSection: "BSCPE 4B"
+
+    },
+
+    {  
+        rfid: "1561418839",
+        name: "Geno Ralph Juayno",
+        yearSection: "BSCPE 4B"
+
+    },
+
+    {  
+        rfid: "1945574107",
+        name: "Christian Villanueva",
+        yearSection: "BSCPE 4B"
+
+    },
+
+    {  
+        rfid: "1895944374",
+        name: "Allendrei Ras",
+        yearSection: "BSCPE 4A"
+
+    },
+];
+
+
+
+
+
+
+
+/* ================= RFID AUTO DETECT ================= */
+let rfidBuffer = "";
+let lastKeyTime = Date.now();
+let scanLock = false;
+
+document.addEventListener("keydown", function(e) {
+    const now = Date.now();
+
+    if (now - lastKeyTime > 100) {
+        rfidBuffer = "";
+    }
+    lastKeyTime = now;
+
+    if (e.key === "Enter") {
+        if (rfidBuffer.length > 5) {
+            handleRFIDScan(rfidBuffer);
+        }
+        rfidBuffer = "";
+    } else if (/^[0-9a-zA-Z]$/.test(e.key)) {
+        rfidBuffer += e.key;
+    }
+});
+
+// ============handle Rfidscan =========== //
+
+function handleRFIDScan(studentId) {
+
+
+const activeEvent = JSON.parse(localStorage.getItem("activeEvent"));
+const events = JSON.parse(localStorage.getItem("events")) || [];
+
+// ❌ No active event
+if (!activeEvent) {
+    document.getElementById("statusMessage").innerText =
+    "❌ No active event. RFID tap not allowed.";
+    return;
+}
+
+// 🔎 Check if event still exists
+const event = events.find(e => e.id === activeEvent.id);
+
+if (!event) {
+    document.getElementById("statusMessage").innerText =
+    "❌ Event was deleted. RFID tap not allowed.";
+    return;
+}
+
+// ❌ Event not started
+if (event.status !== "running") {
+    document.getElementById("statusMessage").innerText =
+    "❌ Event not started. RFID tap not allowed.";
+    return;
+}
+
+if (scanLock) return;
+scanLock = true;
+
+document.getElementById("studentId").value = studentId;
+
+const student = studentDatabase.find(s => s.rfid === studentId);
+
+// ❌ RFID not registered
+if (!student) {
+    document.getElementById("statusMessage").innerText =
+    "⚠ RFID not registered.";
+    scanLock = false;
+    return;
+}
+
+// ✅ Fill student information
+document.getElementById("studentName").value = student.name;
+document.getElementById("studentYearSection").value = student.yearSection;
+
+document.getElementById("statusMessage").innerText =
+"✅ Student detected: " + student.name;
+
+// 📸 Capture photo then submit
+setTimeout(() => {
+
+    capturePhoto();
+
+    setTimeout(() => {
+        submitAttendance();
+        scanLock = false;
+    }, 500);
+
+}, 500);
+
+
+}
+
+
+
+
+/* ================= SUBMIT ATTENDANCE MANUAL ================= */
+function submitAttendance() {
+
+    const studentId = document.getElementById("studentId").value.trim();
+    const studentName = document.getElementById("studentName").value.trim();
+    const yearSection = document.getElementById("studentYearSection").value.trim();
+
+    if (!studentId) {
+        statusMessage.innerText = "❌ RFID card not detected.";
+        return;
+    }
+
+    if (!studentName) {
+        statusMessage.innerText = "❌ Student not registered.";
+        return;
+    }
+
+    const activeEvent = JSON.parse(localStorage.getItem("activeEvent"));
+
+    if (!activeEvent) {
+        statusMessage.innerText = "❌ No active event.";
+        return;
+    }
+
+    let attendanceData = JSON.parse(localStorage.getItem("attendanceData")) || [];
+
+   
+const now = new Date();
+const exitTimeLimit = new Date(activeEvent.exitDate);
+
+
+
+
+
+
+
+
+
+// Check if entry already exists
+const existingEntry = attendanceData.find(a =>
+    a.studentId === studentId &&
+    a.eventId === activeEvent.id
+);
+
+const isEventEnded = activeEvent.status === "ended" || now > exitTimeLimit;
+
+// ================= ENTRY MODE =================
+if (!existingEntry) {
+
+    if (isEventEnded) {
+        statusMessage.innerText = "❌ Event already ended. Entry not allowed.";
+        return;
+    }
+
+    const newEntry = {
+        id: Date.now(),
+        studentId: studentId,
+        name: studentName,
+        yearSection: yearSection,
+        photo: capturedImage,
+        entryTime: new Date().toISOString(),
+        exitTime: null,
+        status: "pending",
+        eventId: activeEvent.id,
+        event: activeEvent.name
+    };
+
+    attendanceData.push(newEntry);
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+
+    statusMessage.innerText = "✅ Entry Recorded (Pending Verification)";
+}
+
+
+// ================= EXIT MODE =================
+else {
+
+    // ❌ Already exited
+    if (existingEntry.exitTime) {
+        statusMessage.innerText = "❌ Exit already recorded.";
+        return;
+    }
+
+    // ❌ NOT VERIFIED → block exit
+    if (existingEntry.status !== "verified") {
+        statusMessage.innerText = "❌ You must be VERIFIED by admin before exit.";
+        return;
+    }
+
+    // ❌ Event still running → block exit
+    if (!isEventEnded) {
+        statusMessage.innerText = "❌ Exit allowed only after event ends.";
+        return;
+    }
+
+    // ✅ Allow exit
+    existingEntry.exitTime = new Date().toISOString();
+
+    localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+
+    statusMessage.innerText = "✅ Exit Recorded Successfully!";
+}
+
+    document.getElementById("studentId").value = "";
+    document.getElementById("studentName").value = "";
+    document.getElementById("studentYearSection").value = "";
+    capturedImage = null;
+}
+
+
+
+// ==============Display Active Events ==================//
+function displayActiveEvent() {
+
+    const activeEventInfo = document.getElementById("activeEventInfo");
+    const activeEvent = JSON.parse(localStorage.getItem("activeEvent"));
+
+    // If no event exists
+    if (!activeEvent || activeEvent.status !== "started") {
+
+        activeEventInfo.innerHTML = `
+            <div style="
+                background:#fdecea;
+                color:#e74c3c;
+                padding:12px;
+                border-radius:8px;
+                text-align:center;
+                font-weight:bold;
+            ">
+                ❌ No Active Event at the moment.
+            </div>
+        `;
+
+        return;
+    }
+
+    // Show active event
+    activeEventInfo.innerHTML = `
+        <div style="
+            background:#e8f8f5;
+            padding:15px;
+            border-radius:10px;
+            border-left:6px solid #27ae60;
+        ">
+
+            <h4 style="color:#27ae60; margin-bottom:8px;">
+                <i class="fas fa-calendar-check"></i> Active Event
+            </h4>
+
+            <p><strong>Name:</strong> ${activeEvent.name || "N/A"}</p>
+            <p><strong>Venue:</strong> ${activeEvent.venue || "N/A"}</p>
+            <p><strong>Description:</strong> ${activeEvent.description || "N/A"}</p>
+
+        </div>
+    `;
+}
+
+// Load event when page opens
+window.addEventListener("DOMContentLoaded", displayActiveEvent);
+
+// ⭐ Auto update if event is started or ended in another tab/page
+window.addEventListener("storage", function(e) {
+    if (e.key === "activeEvent") {
+        displayActiveEvent();
+    }
+});
+
+</script>
+
+
+
+
+<!-- 🔐 ADMIN PAGE PROTECTION -->
+    <script>
+    (function () {
+        const isLoggedIn = sessionStorage.getItem("adminLoggedIn");
+
+        if (isLoggedIn !== "true") {
+            const username = prompt("Enter admin username:");
+            const password = prompt("Enter admin password:");
+
+            if (username === "admin" && password === "sac123") {
+                sessionStorage.setItem("adminLoggedIn", "true");
+                alert("Login successful!");
+            } else {
+                alert("Access denied!");
+                window.location.href = "student-login.html";
+            }
+        }
+    })();
+
+    function logout() {
+        sessionStorage.removeItem("adminLoggedIn");
+        alert("Logged out successfully!");
+        window.location.href = "student-login.html";
+    }
+</script>
+
+
+
+
+
+<script src="script.js"></script>
+</body>
+</html>
